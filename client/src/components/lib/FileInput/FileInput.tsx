@@ -5,20 +5,24 @@ import styles from "./FileInput.module.css"
 
 export const FileInput = () => {
     const [drag, setDrag] = useState(false)
+    const [filesList, setFilesList] = useState<File[]>([])
     const fileInputRef = useRef<HTMLInputElement | null>(null)
 
     const dragStartHandler = (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault()
+        e.stopPropagation()
         setDrag(true)
     }
 
     const dragLeaveHandler = (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault()
+        e.stopPropagation()
         setDrag(false)
     }
 
     const onDropHandler = (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault()
+        e.stopPropagation()
         const files = [...e.dataTransfer.files]
         handleFiles(files)
         setDrag(false)
@@ -31,10 +35,9 @@ export const FileInput = () => {
     }
 
     const handleFiles = (files: File[]) => {
+        setFilesList((prev) => [...prev, ...files])
         const formData = new FormData()
-        files.forEach((file) => {
-            formData.append("files", file)
-        })
+        files.forEach((file) => formData.append("files", file))
         console.log(files)
     }
 
@@ -42,18 +45,12 @@ export const FileInput = () => {
         fileInputRef.current?.click()
     }
 
+    const removeFile = (index: number) => {
+        setFilesList((prev) => prev.filter((_, i) => i !== index))
+    }
+
     return (
         <div className={styles.file_input}>
-            <div
-                className={drag ? styles.drop_area_active : styles.drop_area}
-                onDragStart={dragStartHandler}
-                onDragLeave={dragLeaveHandler}
-                onDragOver={dragStartHandler}
-                onDrop={onDropHandler}
-            >
-                {drag ? "Отпустите файлы чтобы загрузить их" : "Перетащите файлы сюда"}
-            </div>
-
             <input
                 type="file"
                 ref={fileInputRef}
@@ -63,8 +60,46 @@ export const FileInput = () => {
             />
 
             <button className={styles.button} type="button" onClick={handleButtonClick}>
-                Выбрать файлы
+                Выберите файлы
             </button>
+
+            {drag ? (
+                <div
+                    className={styles.drop_area_active}
+                    onDragStart={dragStartHandler}
+                    onDragLeave={dragLeaveHandler}
+                    onDragOver={dragStartHandler}
+                    onDrop={onDropHandler}
+                >
+                    Отпустите файлы чтобы загрузить их
+                </div>
+            ) : (
+                <div
+                    className={styles.drop_area}
+                    onDragStart={dragStartHandler}
+                    onDragLeave={dragLeaveHandler}
+                    onDragOver={dragStartHandler}
+                >
+                    Или перетащите файлы чтобы загрузить их
+                </div>
+            )}
+            
+            {filesList.length > 0 && (
+                <ul className={styles.file_list}>
+                    {filesList.map((file, index) => (
+                        <li key={index}>
+                            <span>{file.name}</span>
+                            <button
+                                type="button"
+                                className={styles.file_remove}
+                                onClick={() => removeFile(index)}
+                            >
+                                ✕
+                            </button>
+                        </li>
+                    ))}
+                </ul>
+            )}
         </div>
     )
 }
